@@ -32,15 +32,15 @@ class Dictionary:
         self.symbols = []
         self.count = []
         self.indices = {}
-        # if add_special_symbols:
-        #     self.bos_index = self.add_symbol(bos)
-        #     self.pad_index = self.add_symbol(pad)
-        #     self.eos_index = self.add_symbol(eos)
-        #     self.unk_index = self.add_symbol(unk)
-        #     if extra_special_symbols:
-        #         for s in extra_special_symbols:
-        #             self.add_symbol(s)
-        #     self.nspecial = len(self.symbols)
+        if add_special_symbols:
+            self.bos_index = self.add_symbol(bos)
+            self.pad_index = self.add_symbol(pad)
+            self.eos_index = self.add_symbol(eos)
+            self.unk_index = self.add_symbol(unk)
+            if extra_special_symbols:
+                for s in extra_special_symbols:
+                    self.add_symbol(s)
+            self.nspecial = len(self.symbols)
 
     def __eq__(self, other):
         return self.indices == other.indices
