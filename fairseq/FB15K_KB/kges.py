@@ -52,47 +52,71 @@ def get_KGE(model, dataset, ner_model, text, Q_M_dict, dim=512):
 		for i in range(len(text)):
 			if e == text[i]:
 				idx[i]=1
-				break
-	Qids = []
-	MIDs = []
-
-	if len(ents)==0:
-		return torch.stack(row)
-	else:
-		for ent in ents:
-			qid = get_qid(ent)
-			if qid=='-Q':
-				for i in range(len(text)):
-					if ent == text[i]:
-						idx[i]=0
-						break
+	print(len(idx))
+	print(idx)
+	for i in range(len(idx)):
+		if idx[i]!=0:
+			qid = get_qid(text[i])
+			if qid == '-Q':
+				pass
 			else:
-				Qids.append(qid)
-				for i in range(len(text)):
-					if ent == text[i]:
-						mark[qid]=i
-						break
-		if len(set(Qids))==1:
-			return torch.stack(row)
-		else:
-			for q in Qids:
-				m = mapping_Qid_MID(q, Q_M_dict)
+				m = mapping_Qid_MID(qid, Q_M_dict)
 				if m == 'unk':
-					idx[mark[q]]=0
-					mark[q]=-1
+					pass
 				else:
-					MIDs.append(m)
-			if len(MIDs)==0:
-				return torch.stack(row)
-			mark_mid = [mark[k] for k in list(mark.keys()) if mark[k]!=-1]
-			list_idx = dataset.training.entities_to_ids(MIDs)
-			idx = torch.as_tensor(list_idx, device=model.device)
-			entity_embeddings = model.entity_representations[0]
-			_embedding = entity_embeddings(idx).detach()
-			for i in range(len(mark_mid)):
-				row[mark_mid[i]]=_embedding[i]
-			row = torch.stack(row)
-			return row
+					list_idx = dataset.training.entities_to_ids(MIDs)
+					_idx = torch.as_tensor(list_idx, device=model.device)
+					entity_embeddings = model.entity_representations[0]
+					_embedding = entity_embeddings(_idx).detach()
+					row[i]=_embedding[0]
+	row = torch.stack(row)
+	return row
+	# Qids = []
+	# MIDs = []
+
+	# if len(ents)==0:
+	# 	return torch.stack(row)
+	# else:
+	# 	for ent in ents:
+	# 		qid = get_qid(ent)
+	# 		if qid=='-Q':
+	# 			for i in range(len(text)):
+	# 				if ent == text[i]:
+	# 					idx[i]=0
+	# 		else:
+	# 			Qids.append(qid)
+	# 			temp = []
+	# 			for i in range(len(text)):
+	# 				if ent == text[i]:
+	# 					temp.append(i)
+	# 			mark[qid]=temp
+	# 	if len(set(Qids))==1:
+	# 		return torch.stack(row)
+	# 	else:
+	# 		for q in Qids:
+	# 			m = mapping_Qid_MID(q, Q_M_dict)
+	# 			if m == 'unk':
+	# 				for i in mark[q]:
+	# 					idx[i]=0
+	# 				mark[q]=-1
+	# 			else:
+	# 				MIDs.append(m)
+	# 		if len(MIDs)==0:
+	# 			return torch.stack(row)
+	# 		mark_mid = []
+	# 		for k in list(mark.keys()):
+	# 			if mark[k]!=-1:
+	# 				for _idx in mark[k]:
+	# 					mark_mid.append(_idx)
+	# 		mark_mid.sort()
+	# 		list_idx = dataset.training.entities_to_ids(MIDs)
+	# 		idx = torch.as_tensor(list_idx, device=model.device)
+	# 		entity_embeddings = model.entity_representations[0]
+	# 		_embedding = entity_embeddings(idx).detach()
+	# 		for i in range(len(mark_mid)):
+	# 			row[mark_mid[i]]=_embedding[i]
+	# 		row = torch.stack(row)
+	# 		return row
 
 def get_final_KGE_batch(model, dataset, ner_model, texts_list, Q_M_dict, dim=512):
 	batch_embeddings = []
