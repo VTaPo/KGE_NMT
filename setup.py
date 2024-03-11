@@ -190,7 +190,6 @@ def do_setup(package_data):
             "torchaudio>=0.8.0",
             "scikit-learn",
             "packaging",
-            "git+https://github.com/pykeen/pykeen.git",
             "sacremoses"
         ],
         extras_require={
