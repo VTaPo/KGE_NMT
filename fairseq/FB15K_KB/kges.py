@@ -52,8 +52,6 @@ def get_KGE(model, dataset, ner_model, text, Q_M_dict, dim=512):
 		for i in range(len(text)):
 			if e == text[i]:
 				idx[i]=1
-	print(len(idx))
-	print(idx)
 	for i in range(len(idx)):
 		if idx[i]!=0:
 			qid = get_qid(text[i])
@@ -64,7 +62,7 @@ def get_KGE(model, dataset, ner_model, text, Q_M_dict, dim=512):
 				if m == 'unk':
 					pass
 				else:
-					list_idx = dataset.training.entities_to_ids(MIDs)
+					list_idx = dataset.training.entities_to_ids([m])
 					_idx = torch.as_tensor(list_idx, device=model.device)
 					entity_embeddings = model.entity_representations[0]
 					_embedding = entity_embeddings(_idx).detach()
