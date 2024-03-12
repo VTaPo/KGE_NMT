@@ -27,13 +27,20 @@ def get_qid(entity_name):
 	else:
 		return '-Q'
 
-def create_Qid_MID_dict(file_path):
-	result_dict = {}
+def create_Qid_MID_dict(mapping_file_path, entities_file_path):
+	mids_FB15k = []
+	with open(entities_file_path, 'r', encoding='utf-8') as f:
+		for line in f:
+			k, v = line.strip().split('\t')
+			mids_FB15k.append(v)
 
-	with open(file_path, 'r', encoding='utf-8') as file:
+	result_dict = {}
+	with open(mapping_file_path, 'r', encoding='utf-8') as file:
 		for line in file:
 			key, value = line.strip().split('\t')
-			result_dict[value] = key
+			if key in mids:
+				result_dict[value] = key
+
 	return result_dict
 
 def mapping_Qid_MID(Qid, Qid_MID_dict):
