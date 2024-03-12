@@ -27,19 +27,12 @@ def get_qid(entity_name):
 	else:
 		return '-Q'
 
-def create_Qid_MID_dict(mapping_file_path, entities_file_path):
-	mids_FB15k = []
-	with open(entities_file_path, 'r', encoding='utf-8') as f:
-		for line in f:
-			k, v = line.strip().split('\t')
-			mids_FB15k.append(v)
-
+def create_Qid_MID_dict(mapping_file_path):
 	result_dict = {}
 	with open(mapping_file_path, 'r', encoding='utf-8') as file:
 		for line in file:
 			key, value = line.strip().split('\t')
-			if key in mids_FB15k:
-				result_dict[value] = key
+			result_dict[value] = key
 
 	return result_dict
 
@@ -133,13 +126,7 @@ def get_final_KGE_batch(model, dataset, ner_model, texts_list, Q_M_dict, dim=512
 
 	return batch_embeddings
 
-def KGEs(texts, ner, dataset):
-	model = torch.load('fairseq/FB15K_KB/fb15k_transe/trained_model.pkl')
-
-	fb2w_file_path = 'fairseq/FB15K_KB/fb2w.txt'
-	ents_dict_path = 'fairseq/FB15K_KB/entities.dict'
-	Q_M_dict = create_Qid_MID_dict(fb2w_file_path, ents_dict_path)
-
+def KGEs(model, texts, ner, dataset, Q_M_dict):
 	KGEs = get_final_KGE_batch(model, dataset, ner, texts, Q_M_dict)
 
 	return KGEs
