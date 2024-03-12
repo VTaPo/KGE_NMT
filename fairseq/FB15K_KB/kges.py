@@ -38,7 +38,7 @@ def create_Qid_MID_dict(mapping_file_path, entities_file_path):
 	with open(mapping_file_path, 'r', encoding='utf-8') as file:
 		for line in file:
 			key, value = line.strip().split('\t')
-			if key in mids:
+			if key in mids_FB15k:
 				result_dict[value] = key
 
 	return result_dict
@@ -141,7 +141,8 @@ def KGEs(texts):
 	ner = pipeline("ner", grouped_entities=True)
 
 	fb2w_file_path = 'fairseq/FB15K_KB/fb2w.txt'
-	Q_M_dict = create_Qid_MID_dict(fb2w_file_path)
+	ents_dict_path = 'fairseq/FB15K_KB/entities.dict'
+	Q_M_dict = create_Qid_MID_dict(fb2w_file_path, ents_dict_path)
 
 	KGEs = get_final_KGE_batch(model, dataset, ner, texts, Q_M_dict)
 
