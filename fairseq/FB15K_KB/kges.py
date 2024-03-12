@@ -48,9 +48,11 @@ def get_KGE(model, dataset, ner_model, text, Q_M_dict, dim=512):
 	sentence = ' '.join(text)
 	ner_results = ner_model(sentence)
 	ents = [result['word'] for result in ner_results]
+	if len(ents) == 0:
+		return torch.stack(row)
 	for e in ents:
 		for i in range(len(text)):
-			if e == text[i]:
+			if e == text[i] and idx[i] == 0:
 				idx[i]=1
 	for i in range(len(idx)):
 		if idx[i]!=0:
