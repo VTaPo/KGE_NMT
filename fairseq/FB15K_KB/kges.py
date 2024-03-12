@@ -3,6 +3,7 @@ from pykeen.models import TransE
 from pykeen.datasets import FB15k
 from transformers import pipeline
 import requests
+import string
 
 import numpy as np
 
@@ -39,84 +40,45 @@ def create_Qid_MID_dict(mapping_file_path):
 def mapping_Qid_MID(Qid, Qid_MID_dict):
 	return Qid_MID_dict.get(Qid,'unk')
 
+def remove_non_alphabetic(sentence):
+    valid_characters = set(string.ascii_lowercase) | set(string.ascii_uppercase) | {' '}
+    cleaned_sentence = ''.join(char for char in sentence if char in valid_characters)
+    return cleaned_sentence
+
 def get_KGE(model, dataset, ner_model, text, Q_M_dict, dim=512):
 	row=[]
 	for i in range(len(text)):
 		row.append(torch.zeros(dim).to('cuda'))
-	mark={}
-	idx = [0 for _ in range(len(text))]
+	idx = []
 	sentence = ' '.join(text)
+	sentence = remove_non_alphabetic(sentence)
+	words = sentence.split()
 	ner_results = ner_model(sentence)
 	ents = [result['word'] for result in ner_results]
 	if len(ents) == 0:
 		return torch.stack(row)
 	for e in ents:
-		for i in range(len(text)):
-			if e == text[i] and idx[i] == 0:
-				idx[i]=1
-	for i in range(len(idx)):
-		if idx[i]!=0:
-			qid = get_qid(text[i])
-			if qid == '-Q':
+		for i in range(len(words)):
+			if i not in idx:
+				if e == words[i]:
+					idx.append(i)
+	for i in idx:
+		qid = get_qid(words[i])
+		if qid == '-Q':
+			pass
+		else:
+			m = mapping_Qid_MID(qid, Q_M_dict)
+			if m == 'unk':
 				pass
 			else:
-				m = mapping_Qid_MID(qid, Q_M_dict)
-				if m == 'unk':
-					pass
-				else:
-					list_idx = dataset.training.entities_to_ids([m])
-					_idx = torch.as_tensor(list_idx, device=model.device)
-					entity_embeddings = model.entity_representations[0]
-					_embedding = entity_embeddings(_idx).detach()
-					row[i]=_embedding[0]
+				list_idx = dataset.training.entities_to_ids([m])
+				_idx = torch.as_tensor(list_idx, device=model.device)
+				entity_embeddings = model.entity_representations[0]
+				_embedding = entity_embeddings(_idx).detach()
+				row[i]=_embedding[0]
 	row = torch.stack(row)
 	return row
-	# Qids = []
-	# MIDs = []
-
-	# if len(ents)==0:
-	# 	return torch.stack(row)
-	# else:
-	# 	for ent in ents:
-	# 		qid = get_qid(ent)
-	# 		if qid=='-Q':
-	# 			for i in range(len(text)):
-	# 				if ent == text[i]:
-	# 					idx[i]=0
-	# 		else:
-	# 			Qids.append(qid)
-	# 			temp = []
-	# 			for i in range(len(text)):
-	# 				if ent == text[i]:
-	# 					temp.append(i)
-	# 			mark[qid]=temp
-	# 	if len(set(Qids))==1:
-	# 		return torch.stack(row)
-	# 	else:
-	# 		for q in Qids:
-	# 			m = mapping_Qid_MID(q, Q_M_dict)
-	# 			if m == 'unk':
-	# 				for i in mark[q]:
-	# 					idx[i]=0
-	# 				mark[q]=-1
-	# 			else:
-	# 				MIDs.append(m)
-	# 		if len(MIDs)==0:
-	# 			return torch.stack(row)
-	# 		mark_mid = []
-	# 		for k in list(mark.keys()):
-	# 			if mark[k]!=-1:
-	# 				for _idx in mark[k]:
-	# 					mark_mid.append(_idx)
-	# 		mark_mid.sort()
-	# 		list_idx = dataset.training.entities_to_ids(MIDs)
-	# 		idx = torch.as_tensor(list_idx, device=model.device)
-	# 		entity_embeddings = model.entity_representations[0]
-	# 		_embedding = entity_embeddings(idx).detach()
-	# 		for i in range(len(mark_mid)):
-	# 			row[mark_mid[i]]=_embedding[i]
-	# 		row = torch.stack(row)
-	# 		return row
+	
 
 def get_final_KGE_batch(model, dataset, ner_model, texts_list, Q_M_dict, dim=512):
 	batch_embeddings = []
