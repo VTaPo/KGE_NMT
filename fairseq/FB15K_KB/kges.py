@@ -133,12 +133,8 @@ def get_final_KGE_batch(model, dataset, ner_model, texts_list, Q_M_dict, dim=512
 
 	return batch_embeddings
 
-def KGEs(texts):
+def KGEs(texts, ner, dataset):
 	model = torch.load('fairseq/FB15K_KB/fb15k_transe/trained_model.pkl')
-
-	dataset = FB15k()
-
-	ner = pipeline("ner", grouped_entities=True)
 
 	fb2w_file_path = 'fairseq/FB15K_KB/fb2w.txt'
 	ents_dict_path = 'fairseq/FB15K_KB/entities.dict'

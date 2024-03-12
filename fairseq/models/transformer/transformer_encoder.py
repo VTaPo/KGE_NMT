@@ -25,6 +25,9 @@ from fairseq.modules import (
 from fairseq.modules.checkpoint_activations import checkpoint_wrapper
 from fairseq.modules.quant_noise import quant_noise as apply_quant_noise_
 
+from pykeen.datasets import FB15k
+from transformers import pipeline
+
 from fairseq.FB15K_KB.kges import KGEs
 
 
@@ -103,6 +106,8 @@ class TransformerEncoderBase(FairseqEncoder):
             self.layer_norm = LayerNorm(embed_dim, export=cfg.export)
         else:
             self.layer_norm = None
+        self.ner_model = pipeline("ner", grouped_entities=True)
+        self.KB = FB15k()
 
     def build_encoder_layer(self, cfg):
         layer = transformer_layer.TransformerEncoderLayerBase(
@@ -206,7 +211,7 @@ class TransformerEncoderBase(FairseqEncoder):
         """
         #get KGE embeddings
         texts = [[self.dictionary[i] for i in src_tokens[j]] for j in range(src_tokens.shape[0])]
-        kges = KGEs(texts)
+        kges = KGEs(texts, self.ner_model, self.KB)
 
         # compute padding mask
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
