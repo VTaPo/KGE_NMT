@@ -112,6 +112,8 @@ class TransformerEncoderBase(FairseqEncoder):
         self.ner_model = pipeline("ner", grouped_entities=True)
         self.KB = FB15k()
         self.KGE_model = torch.load('fairseq/FB15K_KB/fb15k_transe/trained_model.pkl')
+        self.mapping_file_path = 'fairseq/FB15K_KB/Qids_MIDs.txt'
+        self.Q_M_dict = create_Qid_MID_dict(self.mapping_file_path)
 
     def build_encoder_layer(self, cfg):
         layer = transformer_layer.TransformerEncoderLayerBase(
@@ -214,10 +216,8 @@ class TransformerEncoderBase(FairseqEncoder):
                   Only populated if *return_all_hiddens* is True.
         """
         #get KGE embeddings
-        mapping_file_path = 'fairseq/FB15K_KB/Qids_MIDs.txt'
-        Q_M_dict = create_Qid_MID_dict(mapping_file_path)
         texts = [[self.dictionary[i] for i in src_tokens[j]] for j in range(src_tokens.shape[0])]
-        kges = KGEs(self.KGE_model, texts, self.ner_model, self.KB, Q_M_dict)
+        kges = KGEs(self.KGE_model, texts, self.ner_model, self.KB, self.Q_M_dict)
 
         # compute padding mask
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
