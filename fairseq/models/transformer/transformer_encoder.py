@@ -217,7 +217,8 @@ class TransformerEncoderBase(FairseqEncoder):
         """
         #get KGE embeddings
         texts = [[self.dictionary[i] for i in src_tokens[j]] for j in range(src_tokens.shape[0])]
-        kges = KGEs(self.KGE_model, texts, self.ner_model, self.KB, self.Q_M_dict)
+        kges, flags = KGEs(self.KGE_model, texts, self.ner_model, self.KB, self.Q_M_dict)
+        num_of_kges = int(kges.shape[1])
 
         # compute padding mask
         encoder_padding_mask = src_tokens.eq(self.padding_idx)
@@ -235,8 +236,9 @@ class TransformerEncoderBase(FairseqEncoder):
             1 - encoder_padding_mask.unsqueeze(-1).type_as(x) * has_pads.type_as(x)
         )
 
-        #embeddings + KGEs
-        x = x + kges
+        #embeddings concatenate KGEs
+        if not all(flag == False for flag in flags):
+            x = torch.cat((x, kges), dim = 1)
 
         # B x T x C -> T x B x C
         x = x.transpose(0, 1)
@@ -266,6 +268,11 @@ class TransformerEncoderBase(FairseqEncoder):
 
         if self.layer_norm is not None:
             x = self.layer_norm(x)
+
+        #remove KGEs before pass to decoder
+        if not all(flag == False for flag in flags):
+            x = x[:-num_of_kges]
+
 
         # The Pytorch Mobile lite interpreter does not supports returning NamedTuple in
         # `forward` so we use a dictionary instead.
