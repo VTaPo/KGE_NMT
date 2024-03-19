@@ -31,7 +31,9 @@ from transformers import pipeline
 import requests
 import numpy as np
 
-from fairseq.FB15K_KB.kges import KGEs, create_Qid_MID_dict
+from sentence_transformers import SentenceTransformer
+
+from fairseq.FB15K_KB.kges import KGEs, create_Qid_MID_dict, create_realName_Qid_dict, create_Qid_description_dict
 
 
 # rewrite name for backward compatibility in `make_generation_fast_`
@@ -109,11 +111,17 @@ class TransformerEncoderBase(FairseqEncoder):
             self.layer_norm = LayerNorm(embed_dim, export=cfg.export)
         else:
             self.layer_norm = None
+
         self.ner_model = pipeline("ner", grouped_entities=True)
+        self.sem_model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
         self.KB = FB15k()
         self.KGE_model = torch.load('fairseq/FB15K_KB/fb15k_transe/trained_model.pkl')
-        self.mapping_file_path = 'fairseq/FB15K_KB/Qids_MIDs.txt'
-        self.Q_M_dict = create_Qid_MID_dict(self.mapping_file_path)
+        self.mapping_file_path_Qids_MIDs = 'fairseq/FB15K_KB/Qids_MIDs.txt'
+        self.mapping_file_path_realNames_Qids = 'fairseq/FB15K_KB/realNames_Qids.txt'
+        self.mapping_file_path_Qids_descriptions = 'fairseq/FB15K_KB/Qids_descriptions.txt'
+        self.Q_M_dict = create_Qid_MID_dict(self.mapping_file_path_Qids_MIDs)
+        self.name_Q_dict = create_realName_Qid_dict(self.mapping_file_path_realNames_Qids)
+        self.Q_desc_dict = create_Qid_description_dict(self.mapping_file_path_Qids_descriptions)
 
     def build_encoder_layer(self, cfg):
         layer = transformer_layer.TransformerEncoderLayerBase(
@@ -217,7 +225,7 @@ class TransformerEncoderBase(FairseqEncoder):
         """
         #get KGE embeddings
         texts = [[self.dictionary[i] for i in src_tokens[j]] for j in range(src_tokens.shape[0])]
-        kges, flags = KGEs(self.KGE_model, texts, self.ner_model, self.KB, self.Q_M_dict)
+        kges, flags = KGEs(self.KGE_model, texts, self.ner_model, self.sem_model, self.KB, self.name_Q_dict, self.Q_M_dict, self.Q_desc_dict)
         num_of_kges = int(kges.shape[1])
 
         # compute padding mask
